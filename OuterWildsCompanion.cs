@@ -13,17 +13,17 @@ using OpenAI.Managers;
 using OpenAI.ObjectModels;
 using OpenAI.ObjectModels.RequestModels;
 using UnityEngine.InputSystem;
+using System;
 
 namespace OuterWildsCompanion
 {
   public class OuterWildsCompanion : ModBehaviour
   {
     public GameObject companionObject = null;
-
     public static OuterWildsCompanion Instance;
     public static OpenAIService CompanionAI = new OpenAIService(new OpenAiOptions()
     {
-      ApiKey = string.Empty,
+      ApiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY")
     });
 
     private void Awake()
@@ -36,6 +36,8 @@ namespace OuterWildsCompanion
     {
       // Starting here, you'll have access to OWML's mod helper.
       ModHelper.Console.WriteLine($"My mod {nameof(OuterWildsCompanion)} is loaded!", MessageType.Success);
+      ModHelper.Console.WriteLine(Environment.GetEnvironmentVariable("OPENAI_API_KEY"), MessageType.Info);
+
 
       // Example of accessing game code.
       LoadManager.OnCompleteSceneLoad += (scene, loadScene) =>

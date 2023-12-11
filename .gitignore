@@ -6,7 +6,7 @@
 configBackups/
 
 # User-specific files
-*.oaisk
+*.env
 *.rsuser
 *.suo
 # *.user
