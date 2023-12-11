@@ -23,7 +23,7 @@ namespace OuterWildsCompanion
     public static OuterWildsCompanion Instance;
     public static OpenAIService CompanionAI = new OpenAIService(new OpenAiOptions()
     {
-      ApiKey = "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",
+      ApiKey = string.Empty,
     });
 
     private void Awake()
