@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.34330.188
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OuterWildsCompanion", "OuterWildsCompanion.csproj", "{BD841F3C-9066-4513-9A32-252F946A4214}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BD841F3C-9066-4513-9A32-252F946A4214}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BD841F3C-9066-4513-9A32-252F946A4214}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BD841F3C-9066-4513-9A32-252F946A4214}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BD841F3C-9066-4513-9A32-252F946A4214}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5FFC4731-9F70-484A-A1B4-1FE6EDE77416}
+	EndGlobalSection
+EndGlobal
