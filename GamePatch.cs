@@ -38,14 +38,14 @@ namespace OuterWildsCompanion
 
     [HarmonyPostfix]
     [HarmonyPatch(typeof(HUDCamera), nameof(HUDCamera.ActivateHUD))]
-    public static void HUDCamera_ActivateHUD_Postfix(HUDCamera __instance)
+    public static void HUDCamera_ActivateHUD_Postfix()
     {
       OuterWildsCompanion.Instance.companionObject.SetActive(true);
     }
 
     [HarmonyPostfix]
     [HarmonyPatch(typeof(HUDCamera), nameof(HUDCamera.DeactivateHUD))]
-    public static void HUDCamera_DeactivateHUD_Postfix(HUDCamera __instance)
+    public static void HUDCamera_DeactivateHUD_Postfix()
     {
       OuterWildsCompanion.Instance.companionObject.SetActive(false);
     }
