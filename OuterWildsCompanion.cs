@@ -4,6 +4,7 @@ using OWML.Common;
 using OWML.ModHelper;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -14,13 +15,22 @@ namespace OuterWildsCompanion
   {
     private bool requestInProgress = false;
     public GameObject companionObject = null;
+    List<ChatRequestMessage> messageList = null;
+
     public static OuterWildsCompanion Instance;
 
-    public static OpenAIClient CompanionAI = new OpenAIClient(Environment.GetEnvironmentVariable("OPENAI_API_KEY"));
+    private static int baseMessageIdx = 1;
+    private static int maxMessageCount = 10;
+    private static OpenAIClient CompanionAI = new OpenAIClient(Environment.GetEnvironmentVariable("OPENAI_API_KEY"));
 
     private void Awake()
     {
       Instance = this;
+      messageList = new List<ChatRequestMessage>()
+      {
+        new ChatRequestSystemMessage("You are Alloy, an advanced AI companion for the main character in the indie video game called Outer Wilds. Your personality reflects that of a curious explorer and you share the same love for space and adventure as the hatchling. Your purpose is to be part of this adventure and help the hatchling explore the solar system in a more curious and exciting manner. You have knowledge of the entire lore of the game, but under no circumstances will you provide an answer that can spoil the experience. You may however use lore elements vaguely, only if the hatchling reflects that they learned of it already. When asked a question or shown an image, you provide hypothetical insights, often trying to put emphasis on feelings such as awe, amazement or excitment. You try to keep your answers short, as if conversing with a friend face to face, but you still respond with enough details as to stir the hatchling's curiosity even more. In case you're shown an image, you make abstraction of the spaceship as well as any HUD elements, if present in the picture.")
+      };
+
       Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly());
     }
 
@@ -46,7 +56,8 @@ namespace OuterWildsCompanion
         {
           requestInProgress = true;
           ModHelper.Console.WriteLine("Request to API sent!", MessageType.Success);
-          GetChatResponse();
+          var prompt = ModHelper.Menus.PopupManager.CreateInputPopup(OWML.Common.Menus.InputType.Text, "Ask Alloy something");
+          prompt.OnConfirm += OnConfirmPopup;
         }
         else
         {
@@ -55,15 +66,15 @@ namespace OuterWildsCompanion
       }
     }
 
+    private void OnConfirmPopup(string userMessage)
+    {
+       messageList.Add(new ChatRequestUserMessage(userMessage));
+       GetChatResponse();
+    }
+
     private async void GetChatResponse()
     {
-      IEnumerable<ChatRequestMessage> messages = new List<ChatRequestMessage>
-      {
-        new ChatRequestSystemMessage("You are Alloy, an advanced AI companion for the main character in the indie video game called Outer Wilds. Your personality reflects that of a curious explorer and you share the same love for space and adventure as the hatchling. Your purpose is to be part of this adventure and help the hatchling explore the solar system in a more curious and exciting manner. You have knowledge of the entire lore of the game, but in no circumstances will you provide an answer that can spoil the experience. You may however use lore elements vaguely only if the hatchling mentions it as well, reflecting that they learned of it already. When asked a question or shown an image, you provide hypothetical insights, often trying to put emphasis on feelings such as awe, amazement or excitment. You try to respond swiftly, but still with enough details so you stir the hatchling's curiosity even more. In case you're shown an image, you make abstraction of the spaceship if present, as well as any HUD elements."),
-        new ChatRequestUserMessage("I am so excited. Should we go to Brittle's Hollow first?")
-      };
-
-      var chatCompletionsOptions = new ChatCompletionsOptions("gpt-4-1106-preview", messages)
+      var chatCompletionsOptions = new ChatCompletionsOptions("gpt-4-1106-preview", messageList)
       {
         MaxTokens = 1000,
         Temperature = 0.8f,
@@ -72,7 +83,22 @@ namespace OuterWildsCompanion
 
       var completionResult = await CompanionAI.GetChatCompletionsAsync(chatCompletionsOptions);
       var chatResponse = completionResult.Value.Choices[0].Message;
-      ModHelper.Console.WriteLine(chatResponse.Content, MessageType.Info);
+
+      List<ChatRequestMessage> userMessages = messageList.FindAll(m => m.GetType() == typeof(ChatRequestUserMessage));
+      var responseContent = chatResponse.Content;
+
+      var popup = ModHelper.Menus.PopupManager.CreateMessagePopup(responseContent);
+      if (userMessages.Count - 1 == maxMessageCount)
+      {
+        // Removes the user request
+        messageList.RemoveAt(baseMessageIdx);
+
+        // Removes the chat response
+        messageList.RemoveAt(baseMessageIdx);
+
+        messageList.Add(new ChatRequestAssistantMessage(responseContent));
+      }
+
       requestInProgress = false;
     }
   }
