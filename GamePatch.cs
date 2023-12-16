@@ -26,7 +26,8 @@ namespace OuterWildsCompanion
       Vector2 shiftDirection = new Vector2(0.5f - rectTrans.anchorMax.x, 0.5f - rectTrans.anchorMax.y);
       rectTrans.anchoredPosition = shiftDirection * rectTrans.rect.size;
 
-      var fileData = File.ReadAllBytes("C:\\Users\\Eduard Gothard\\Pictures\\PhotoshopEdits\\Alloy.png");
+      var companionSprite = Path.Combine(Directory.GetCurrentDirectory(), "Alloy.png");
+      var fileData = File.ReadAllBytes(companionSprite);
       Texture2D companionTexture = new Texture2D(850, 850);
       companionTexture.LoadImage(fileData);
 
