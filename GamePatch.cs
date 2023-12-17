@@ -1,5 +1,6 @@
-﻿using HarmonyLib;
-using System.IO;
+﻿using System.IO;
+
+using HarmonyLib;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -8,6 +9,7 @@ namespace OuterWildsCompanion
   [HarmonyPatch]
   public class GamePatch
   {
+    
     [HarmonyPostfix]
     [HarmonyPatch(typeof(ReticleController), nameof(ReticleController.Awake))]
     public static void ReticleController_Awake_Postfix(ReticleController __instance)

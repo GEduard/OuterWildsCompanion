@@ -20,6 +20,7 @@
 	  <IncludeAssets>compile</IncludeAssets>
 	</PackageReference>
 	<PackageReference Include="Azure.AI.OpenAI" Version="1.0.0-beta.11" />
+	<PackageReference Include="System.Net.Http.Json" Version="8.0.0" />
   </ItemGroup>
   <ItemGroup>
     <None Include="default-config.json">
@@ -31,12 +32,6 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="OuterWildsCompanion.csproj.user" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Update="Properties\Resources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <None Update="Alloy.png">
