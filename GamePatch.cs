@@ -1,6 +1,7 @@
 ﻿using System.IO;
 
 using HarmonyLib;
+using OWML.Common;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -43,14 +44,37 @@ namespace OuterWildsCompanion
     [HarmonyPatch(typeof(HUDCamera), nameof(HUDCamera.ActivateHUD))]
     public static void HUDCamera_ActivateHUD_Postfix()
     {
+      OuterWildsCompanion.Instance.companionIsActive = true;
       OuterWildsCompanion.Instance.companionObject.SetActive(true);
     }
 
-    [HarmonyPostfix]
+    [HarmonyPrefix]
     [HarmonyPatch(typeof(HUDCamera), nameof(HUDCamera.DeactivateHUD))]
-    public static void HUDCamera_DeactivateHUD_Postfix()
+    public static void HUDCamera_DeactivateHUD_Prefix()
     {
+      OuterWildsCompanion.Instance.companionIsActive = false;
       OuterWildsCompanion.Instance.companionObject.SetActive(false);
+    }
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(ShipCockpitUI), nameof(ShipCockpitUI.OnEnterFlightConsole))]
+    public static void ShipCockpitUI_OnEnterFlightConsole_Postfix()
+    {
+      OuterWildsCompanion.Instance.companionIsActive = true;
+    }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(ShipCockpitUI), nameof(ShipCockpitUI.OnExitFlightConsole))]
+    public static void ShipCockpitUI_OnExitFlightConsole_Prefix()
+    {
+      OuterWildsCompanion.Instance.companionIsActive = false;
+    }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(DeathManager), nameof(DeathManager.KillPlayer))]
+    public static void DeathManager_KillPlayer_Prefix()
+    {
+      OuterWildsCompanion.Instance.ResetCompanion();
     }
   }
 }
