@@ -15,6 +15,8 @@ using Azure;
 using NAudio.Wave;
 using Azure.AI.OpenAI;
 using NAudio.Wave.SampleProviders;
+using UnityEngine.InputSystem.LowLevel;
+using UnityEngine.InputSystem.Controls;
 
 namespace OuterWildsCompanion
 {
@@ -120,18 +122,18 @@ namespace OuterWildsCompanion
 
     private void Update()
     {
-      if (Keyboard.current[Key.V].wasPressedThisFrame && companionIsAvailable)
+      if (Keyboard.current[Key.V].wasPressedThisFrame || Mouse.current.backButton.wasPressedThisFrame)
       {
-        if (!requestInProgress)
+        if (!requestInProgress && companionIsAvailable)
         {
           audioClip = Microphone.Start(deviceName, loop: false, maxAudioLength, sampleRate);
           stopWatch.Start();
         }
       }
 
-      if (Keyboard.current[Key.V].wasReleasedThisFrame && companionIsAvailable)
+      if (Keyboard.current[Key.V].wasPressedThisFrame || Mouse.current.backButton.wasPressedThisFrame)
       {
-        if (!requestInProgress)
+        if (!requestInProgress && companionIsAvailable)
         {
           stopWatch.Stop();
           requestInProgress = true;
@@ -202,7 +204,6 @@ namespace OuterWildsCompanion
         promptReader.Close();
         File.Delete(outputPromptPath);
       }
-
 
       if (!companionIsAvailable)
       {
