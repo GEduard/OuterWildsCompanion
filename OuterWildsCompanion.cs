@@ -86,8 +86,16 @@ namespace OuterWildsCompanion
     public void ResetCompanion()
     {
       messageList.Clear();
+      requestInProgress = false;
       companionIsAvailable = false;
       messageList.Add(new ChatRequestSystemMessage(systemMessage));
+
+      if (stopWatch?.IsRunning == true)
+      {
+        stopWatch.Stop();
+        Microphone.End(deviceName);
+      }
+
       if (responsePlayer?.PlaybackState == PlaybackState.Playing) 
       {
         responsePlayer.Stop();
@@ -179,7 +187,10 @@ namespace OuterWildsCompanion
       {
         Response<AudioTranscription> transcriptionResponse = await CompanionAI.GetAudioTranscriptionAsync(transcriptionOptions);
         AudioTranscription transcription = transcriptionResponse.Value;
-        messageList.Add(new ChatRequestUserMessage(transcription.Text));
+        if (companionIsAvailable)
+        {
+          messageList.Add(new ChatRequestUserMessage(transcription.Text));
+        }
       }
       catch(Exception) 
       {
@@ -277,10 +288,13 @@ namespace OuterWildsCompanion
 
     private void RequestInterrupt()
     {
-      requestInProgress = false;
-      if (messageList.Count != 1)
+      if (requestInProgress)
       {
-        messageList.RemoveAt(messageList.Count - 1);
+        requestInProgress = false;
+        if (messageList.Count != 1)
+        {
+          messageList.RemoveAt(messageList.Count - 1);
+        }
       }
     }
   }
