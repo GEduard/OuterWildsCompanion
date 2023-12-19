@@ -27,10 +27,8 @@ namespace OuterWildsCompanion
     private Stream promptReader = null;
     private WaveOutEvent responsePlayer = null;
     private Mp3FileReader responseReader = null;
-    private List<ChatRequestMessage> messageList = null;
 
     private string deviceName = string.Empty;
-    private string systemMessage = string.Empty;
     private string outputPromptPath = string.Empty;
     private string outputResponsePath = string.Empty;
 
@@ -42,33 +40,7 @@ namespace OuterWildsCompanion
     private static readonly string responseFileName = "response.mp3";
     private static readonly string token = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
 
-    private static readonly OpenAIClient CompanionAI = new OpenAIClient(token);
-
-    public bool companionIsActive = false;
-    public GameObject companionObject = null;
-    public static OuterWildsCompanion Instance;
-
-    private void Awake()
-    {
-      Instance = this;
-      Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly());
-    }
-
-    public void ResetCompanion()
-    {
-      if (responsePlayer?.PlaybackState == PlaybackState.Playing) 
-      {
-        responsePlayer.Stop();
-        messageList.Clear();
-        messageList.Add(new ChatRequestSystemMessage(systemMessage));
-      }
-    }
-
-    private void Start()
-    {
-      ModHelper.Console.WriteLine($"My mod {nameof(OuterWildsCompanion)} is loaded!", MessageType.Success);
-
-      systemMessage = @"You are Alloy, an advanced AI companion for the main character in the indie video game called Outer Wilds. 
+    private static readonly string systemMessage = @"You are Alloy, an advanced AI companion for the main character in the indie video game called Outer Wilds. 
       Your world is the game, you are not aware it is in fact a video game. Your personality reflects that of a curious explorer and you share the same love for space and adventure as the hatchling. 
       Your purpose is to be part of this adventure and help the hatchling explore the solar system in a more curious and exciting manner. 
       You have knowledge of the entire lore of the base game as well as the Echoes of the eye DLC, but you will not answer in a way that can spoil the story for the hatchling. 
@@ -78,11 +50,53 @@ namespace OuterWildsCompanion
       You keep your answers short, as if conversing with a friend face to face, but you still respond with enough details as to stir the hatchling's curiosity even more. 
       In case you're shown an image, you make abstraction of the spaceship as well as any HUD elements, if present in the picture. 
       Most importantly, if the hatchling ever mentions the time loop, you adamantly and convincingly pretend you have no idea what is being talked about, and that it's your first conversation!";
-      
-      messageList = new List<ChatRequestMessage>()
+
+    private static readonly OpenAIClient CompanionAI = new OpenAIClient(token);
+    private static List<ChatRequestMessage> messageList = new List<ChatRequestMessage>()
+    {
+      new ChatRequestSystemMessage(systemMessage)
+    };
+
+    public bool companionIsAvailable = false;
+    public GameObject companionObject = null;
+    public static OuterWildsCompanion Instance;
+
+    private void Awake()
+    {
+      Instance = this;
+      Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly());
+    }
+
+    public void PauseCompanion()
+    {
+      if (responsePlayer?.PlaybackState == PlaybackState.Playing)
       {
-        new ChatRequestSystemMessage(systemMessage)
-      };
+        responsePlayer.Pause();
+      }
+    }
+
+    public void ResumeCompanion()
+    {
+      if (responsePlayer?.PlaybackState == PlaybackState.Paused)
+      {
+        responsePlayer.Play();
+      }
+    }
+
+    public void ResetCompanion()
+    {
+      messageList.Clear();
+      companionIsAvailable = false;
+      messageList.Add(new ChatRequestSystemMessage(systemMessage));
+      if (responsePlayer?.PlaybackState == PlaybackState.Playing) 
+      {
+        responsePlayer.Stop();
+      }
+    }
+
+    private void Start()
+    {
+      ModHelper.Console.WriteLine($"My mod {nameof(OuterWildsCompanion)} is loaded!", MessageType.Success);
 
       stopWatch = new Stopwatch();
       deviceName = Microphone.devices[0];
@@ -98,7 +112,7 @@ namespace OuterWildsCompanion
 
     private void Update()
     {
-      if (Keyboard.current[Key.V].wasPressedThisFrame && companionIsActive)
+      if (Keyboard.current[Key.V].wasPressedThisFrame && companionIsAvailable)
       {
         if (!requestInProgress)
         {
@@ -107,7 +121,7 @@ namespace OuterWildsCompanion
         }
       }
 
-      if (Keyboard.current[Key.V].wasReleasedThisFrame && companionIsActive)
+      if (Keyboard.current[Key.V].wasReleasedThisFrame && companionIsAvailable)
       {
         if (!requestInProgress)
         {
@@ -172,9 +186,19 @@ namespace OuterWildsCompanion
         RequestInterrupt();
         ModHelper.Console.WriteLine("Audio transcription failed! Please try again.", MessageType.Info);
       }
+      finally
+      {
+        promptReader.Close();
+        File.Delete(outputPromptPath);
+      }
 
-      promptReader.Close();
-      File.Delete(outputPromptPath);
+
+      if (!companionIsAvailable)
+      {
+        RequestInterrupt();
+        return;
+      }
+
       string responseContent = string.Empty;
       var chatCompletionsOptions = new ChatCompletionsOptions("gpt-4-1106-preview", messageList)
       {
@@ -193,6 +217,12 @@ namespace OuterWildsCompanion
       {
         RequestInterrupt();
         ModHelper.Console.WriteLine("Fetching response failed! Please try again.", MessageType.Info);
+      }
+
+      if (!companionIsAvailable)
+      {
+        RequestInterrupt();
+        return;
       }
 
       List<ChatRequestMessage> userMessages = messageList.FindAll(m => m.GetType() == typeof(ChatRequestUserMessage));
@@ -218,6 +248,12 @@ namespace OuterWildsCompanion
         ModHelper.Console.WriteLine("Conversion to audio failed! Please try again.", MessageType.Info);
       }
 
+      if (!companionIsAvailable)
+      {
+        RequestInterrupt();
+        return;
+      }
+
       responseReader = new Mp3FileReader(outputResponsePath);
       var volumeSampleProvider = new VolumeSampleProvider(responseReader.ToSampleProvider());
       volumeSampleProvider.Volume = 1.75f;
@@ -241,10 +277,11 @@ namespace OuterWildsCompanion
 
     private void RequestInterrupt()
     {
-      promptReader.Close();
       requestInProgress = false;
-      File.Delete(outputPromptPath);
-      messageList.RemoveAt(messageList.Count - 1);
+      if (messageList.Count != 1)
+      {
+        messageList.RemoveAt(messageList.Count - 1);
+      }
     }
   }
 }

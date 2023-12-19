@@ -1,7 +1,6 @@
 ﻿using System.IO;
 
 using HarmonyLib;
-using OWML.Common;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -10,7 +9,6 @@ namespace OuterWildsCompanion
   [HarmonyPatch]
   public class GamePatch
   {
-    
     [HarmonyPostfix]
     [HarmonyPatch(typeof(ReticleController), nameof(ReticleController.Awake))]
     public static void ReticleController_Awake_Postfix(ReticleController __instance)
@@ -29,9 +27,9 @@ namespace OuterWildsCompanion
       Vector2 shiftDirection = new Vector2(0.5f - rectTrans.anchorMax.x, 0.5f - rectTrans.anchorMax.y);
       rectTrans.anchoredPosition = shiftDirection * rectTrans.rect.size;
 
+      Texture2D companionTexture = new Texture2D(850, 850);
       var companionSprite = Path.Combine(Directory.GetCurrentDirectory(), "Alloy.png");
       var fileData = File.ReadAllBytes(companionSprite);
-      Texture2D companionTexture = new Texture2D(850, 850);
       companionTexture.LoadImage(fileData);
 
       Image companionImage = OuterWildsCompanion.Instance.companionObject.AddComponent<Image>();
@@ -41,10 +39,26 @@ namespace OuterWildsCompanion
     }
 
     [HarmonyPostfix]
+    [HarmonyPatch(typeof(OWTime), nameof(OWTime.Pause))]
+    public static void OWTime_Pause_Postfix()
+    {
+      OuterWildsCompanion.Instance.PauseCompanion();
+      OuterWildsCompanion.Instance.companionIsAvailable = false;
+    }
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(OWTime), nameof(OWTime.Unpause))]
+    public static void OWTime_Unpause_Postfix()
+    {
+      OuterWildsCompanion.Instance.ResumeCompanion();
+      OuterWildsCompanion.Instance.companionIsAvailable = true;
+    }
+
+    [HarmonyPostfix]
     [HarmonyPatch(typeof(HUDCamera), nameof(HUDCamera.ActivateHUD))]
     public static void HUDCamera_ActivateHUD_Postfix()
     {
-      OuterWildsCompanion.Instance.companionIsActive = true;
+      OuterWildsCompanion.Instance.companionIsAvailable = true;
       OuterWildsCompanion.Instance.companionObject.SetActive(true);
     }
 
@@ -52,7 +66,7 @@ namespace OuterWildsCompanion
     [HarmonyPatch(typeof(HUDCamera), nameof(HUDCamera.DeactivateHUD))]
     public static void HUDCamera_DeactivateHUD_Prefix()
     {
-      OuterWildsCompanion.Instance.companionIsActive = false;
+      OuterWildsCompanion.Instance.companionIsAvailable = false;
       OuterWildsCompanion.Instance.companionObject.SetActive(false);
     }
 
@@ -60,14 +74,14 @@ namespace OuterWildsCompanion
     [HarmonyPatch(typeof(ShipCockpitUI), nameof(ShipCockpitUI.OnEnterFlightConsole))]
     public static void ShipCockpitUI_OnEnterFlightConsole_Postfix()
     {
-      OuterWildsCompanion.Instance.companionIsActive = true;
+      OuterWildsCompanion.Instance.companionIsAvailable = true;
     }
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(ShipCockpitUI), nameof(ShipCockpitUI.OnExitFlightConsole))]
     public static void ShipCockpitUI_OnExitFlightConsole_Prefix()
     {
-      OuterWildsCompanion.Instance.companionIsActive = false;
+      OuterWildsCompanion.Instance.companionIsAvailable = false;
     }
 
     [HarmonyPrefix]
