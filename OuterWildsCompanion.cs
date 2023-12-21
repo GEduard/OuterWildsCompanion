@@ -57,6 +57,7 @@ namespace OuterWildsCompanion
       new ChatRequestSystemMessage(systemMessage)
     };
 
+    public bool gameIsPaused = false;
     public bool companionIsAvailable = false;
     public GameObject companionObject = null;
     public static OuterWildsCompanion Instance;
@@ -122,7 +123,7 @@ namespace OuterWildsCompanion
     {
       if (Keyboard.current[Key.V].wasPressedThisFrame || Mouse.current.backButton.wasPressedThisFrame)
       {
-        if (!requestInProgress && companionIsAvailable)
+        if (!requestInProgress && !gameIsPaused && companionIsAvailable)
         {
           audioClip = Microphone.Start(deviceName, loop: false, maxAudioLength, sampleRate);
           stopWatch.Start();
@@ -131,7 +132,7 @@ namespace OuterWildsCompanion
 
       if (Keyboard.current[Key.V].wasPressedThisFrame || Mouse.current.backButton.wasPressedThisFrame)
       {
-        if (!requestInProgress && companionIsAvailable)
+        if (!requestInProgress && !gameIsPaused && companionIsAvailable)
         {
           stopWatch.Stop();
           requestInProgress = true;
@@ -272,6 +273,10 @@ namespace OuterWildsCompanion
       responsePlayer.Init(volumeSampleProvider);
       responsePlayer.PlaybackStopped += WaveOut_PlaybackStopped;
       responsePlayer.Play();
+      if(!gameIsPaused)
+      {
+        responsePlayer.Pause();
+      }
     }
 
     private void WaveOut_PlaybackStopped(object sender, StoppedEventArgs e)

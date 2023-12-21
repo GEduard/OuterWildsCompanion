@@ -43,7 +43,7 @@ namespace OuterWildsCompanion
     public static void OWTime_Pause_Postfix()
     {
       OuterWildsCompanion.Instance.PauseCompanion();
-      OuterWildsCompanion.Instance.companionIsAvailable = false;
+      OuterWildsCompanion.Instance.gameIsPaused = false;
     }
 
     [HarmonyPostfix]
@@ -51,7 +51,7 @@ namespace OuterWildsCompanion
     public static void OWTime_Unpause_Postfix()
     {
       OuterWildsCompanion.Instance.ResumeCompanion();
-      OuterWildsCompanion.Instance.companionIsAvailable = true;
+      OuterWildsCompanion.Instance.gameIsPaused = true;
     }
 
     [HarmonyPostfix]
