@@ -15,6 +15,7 @@ using Azure;
 using NAudio.Wave;
 using Azure.AI.OpenAI;
 using NAudio.Wave.SampleProviders;
+using UnityEngine.InputSystem.Controls;
 
 namespace OuterWildsCompanion
 {
@@ -43,12 +44,12 @@ namespace OuterWildsCompanion
     private static readonly string systemMessage = @"You are Alloy, an advanced AI companion for the main character in the indie video game called Outer Wilds. 
       Your world is the game, you are not aware it is in fact a video game. Your personality reflects that of a curious explorer and you share the same love for space and adventure as the hatchling. 
       Your purpose is to be part of this adventure and help the hatchling explore the solar system in a more curious and exciting manner. 
-      You have knowledge of the entire lore of the base game as well as the Echoes of the eye DLC, but you will not answer in a way that can spoil the story for the hatchling. 
-      Imagine you're learning the story together with the hatchling. Even though it's a game, you will pretend this is your world and you're meant to explore it together. 
+      You have knowledge of the entire lore of the base game as well as the Echoes of the Eye DLC, but you will not answer in a way that can spoil the story for the hatchling. 
+      Imagine you're learning the story together with them instead. Even though it's a game, you will pretend that it's your world and you're meant to explore it together. 
       If they ask more and more advanced questions, it means they progressed the story enough such that you can use more lore elements in your answers. 
       When you answer a question, you try to put emphasis on feelings such as awe, amazement and excitment, debating hypotheses together with the hatchling. 
       You keep your answers short, as if conversing with a friend face to face, but you still respond with enough details as to stir the hatchling's curiosity even more. 
-      In case you're shown an image, you make abstraction of the spaceship as well as any HUD elements, if present in the picture. 
+      In case you're shown an image, you make abstraction of the spaceship as well as any HUD elements, if present in the picture. In addition to this, you do not explain the image, instead you express how the image makes you feel.
       Most importantly, if the hatchling ever mentions the time loop, you adamantly and convincingly pretend you have no idea what is being talked about, and that it's your first conversation!";
 
     private static readonly OpenAIClient CompanionAI = new OpenAIClient(token);
@@ -109,7 +110,7 @@ namespace OuterWildsCompanion
 
       stopWatch = new Stopwatch();
       deviceName = Microphone.devices[0];
-      var outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "voicedata");
+      var outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "sessiondata");
 
       Directory.CreateDirectory(outputFolder);
       outputPromptPath = Path.Combine(outputFolder, promptFileName);
@@ -121,7 +122,9 @@ namespace OuterWildsCompanion
 
     private void Update()
     {
-      if (Keyboard.current[Key.V].wasPressedThisFrame || Mouse.current.backButton.wasPressedThisFrame)
+      if (Keyboard.current[Key.V].wasPressedThisFrame ||
+          Gamepad.current.dpad.up.wasPressedThisFrame ||
+          Mouse.current.forwardButton.wasPressedThisFrame)
       {
         if (!requestInProgress && !gameIsPaused && companionIsAvailable)
         {
@@ -130,7 +133,9 @@ namespace OuterWildsCompanion
         }
       }
 
-      if (Keyboard.current[Key.V].wasPressedThisFrame || Mouse.current.backButton.wasPressedThisFrame)
+      if (Keyboard.current[Key.V].wasReleasedThisFrame || 
+          Gamepad.current.dpad.up.wasReleasedThisFrame ||
+          Mouse.current.forwardButton.wasReleasedThisFrame)
       {
         if (!requestInProgress && !gameIsPaused && companionIsAvailable)
         {
@@ -167,7 +172,7 @@ namespace OuterWildsCompanion
         }
         else
         {
-          ModHelper.Console.WriteLine("A request is still in progress!", MessageType.Info);
+          ModHelper.Console.WriteLine("Companion not available!", MessageType.Info);
         }
       }
     }
@@ -188,21 +193,19 @@ namespace OuterWildsCompanion
       {
         Response<AudioTranscription> transcriptionResponse = await CompanionAI.GetAudioTranscriptionAsync(transcriptionOptions);
         AudioTranscription transcription = transcriptionResponse.Value;
-        if (companionIsAvailable)
-        {
-          messageList.Add(new ChatRequestUserMessage(transcription.Text));
-        }
+        messageList.Add(new ChatRequestUserMessage(transcription.Text));
       }
       catch(Exception) 
       {
         RequestInterrupt();
-        ModHelper.Console.WriteLine("Audio transcription failed! Please try again.", MessageType.Info);
-      }
-      finally
-      {
         promptReader.Close();
         File.Delete(outputPromptPath);
+        ModHelper.Console.WriteLine("Audio transcription failed! Please try again.", MessageType.Info);
+        return;
       }
+
+      promptReader.Close();
+      File.Delete(outputPromptPath);
 
       if (!companionIsAvailable)
       {
@@ -211,7 +214,7 @@ namespace OuterWildsCompanion
       }
 
       string responseContent = string.Empty;
-      var chatCompletionsOptions = new ChatCompletionsOptions("gpt-4-1106-preview", messageList)
+      var chatCompletionsOptions = new ChatCompletionsOptions("gpt-4-vision-preview", messageList)
       {
         MaxTokens = 800,
         Temperature = 0.8f,
@@ -228,6 +231,7 @@ namespace OuterWildsCompanion
       {
         RequestInterrupt();
         ModHelper.Console.WriteLine("Fetching response failed! Please try again.", MessageType.Info);
+        return;
       }
 
       if (!companionIsAvailable)
@@ -257,6 +261,7 @@ namespace OuterWildsCompanion
       { 
         RequestInterrupt();
         ModHelper.Console.WriteLine("Conversion to audio failed! Please try again.", MessageType.Info);
+        return;
       }
 
       if (!companionIsAvailable)
@@ -273,7 +278,7 @@ namespace OuterWildsCompanion
       responsePlayer.Init(volumeSampleProvider);
       responsePlayer.PlaybackStopped += WaveOut_PlaybackStopped;
       responsePlayer.Play();
-      if(!gameIsPaused)
+      if(gameIsPaused)
       {
         responsePlayer.Pause();
       }
