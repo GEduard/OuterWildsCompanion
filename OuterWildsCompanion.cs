@@ -29,7 +29,7 @@ namespace OuterWildsCompanion
     private Mp3FileReader responseReader = null;
 
     private string deviceName = string.Empty;
-    private string outputPromptPath = string.Empty;
+    private string inputPromptPath = string.Empty;
     private string outputResponsePath = string.Empty;
 
     private static readonly int sampleRate = 44100;
@@ -48,7 +48,6 @@ namespace OuterWildsCompanion
       If they ask more and more advanced questions, it means they progressed the story enough such that you can use more lore elements in your answers. 
       When you answer a question, you try to put emphasis on feelings such as awe, amazement and excitment, debating hypotheses together with the hatchling. 
       You keep your answers short, as if conversing with a friend face to face, but you still respond with enough details as to stir the hatchling's curiosity even more. 
-      In case you're shown an image, you make abstraction of the spaceship as well as any HUD elements, if present in the picture. In addition to this, you do not explain the image, instead you express how the image makes you feel.
       Most importantly, if the hatchling ever mentions the time loop, you adamantly and convincingly pretend you have no idea what is being talked about, and that it's your first conversation!";
 
     private static readonly OpenAIClient CompanionAI = new OpenAIClient(token);
@@ -112,18 +111,18 @@ namespace OuterWildsCompanion
       var outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "sessiondata");
 
       Directory.CreateDirectory(outputFolder);
-      outputPromptPath = Path.Combine(outputFolder, promptFileName);
+      inputPromptPath = Path.Combine(outputFolder, promptFileName);
       outputResponsePath = Path.Combine(outputFolder, responseFileName);
-      
-      if(File.Exists(outputPromptPath)) { File.Delete(outputPromptPath); }
-      if(File.Exists(outputResponsePath)) {  File.Delete(outputResponsePath); }
+
+      if (File.Exists(inputPromptPath)) { File.Delete(inputPromptPath); }
+      if (File.Exists(outputResponsePath)) {  File.Delete(outputResponsePath); }
     }
 
     private void Update()
     {
-      if (Keyboard.current[Key.V].wasPressedThisFrame ||
-          Gamepad.current.dpad.up.wasPressedThisFrame ||
-          Mouse.current.forwardButton.wasPressedThisFrame)
+      var gamepad = Gamepad.current;
+      if (Keyboard.current[Key.V].wasPressedThisFrame || Mouse.current.forwardButton.wasPressedThisFrame ||
+         (gamepad != null && gamepad.dpad.up.wasPressedThisFrame))
       {
         if (!requestInProgress && !gameIsPaused && companionIsAvailable)
         {
@@ -132,9 +131,8 @@ namespace OuterWildsCompanion
         }
       }
 
-      if (Keyboard.current[Key.V].wasReleasedThisFrame || 
-          Gamepad.current.dpad.up.wasReleasedThisFrame ||
-          Mouse.current.forwardButton.wasReleasedThisFrame)
+      if (Keyboard.current[Key.V].wasReleasedThisFrame || Mouse.current.forwardButton.wasReleasedThisFrame ||
+         (gamepad != null && gamepad.dpad.up.wasReleasedThisFrame))
       {
         if (!requestInProgress && !gameIsPaused && companionIsAvailable)
         {
@@ -147,7 +145,7 @@ namespace OuterWildsCompanion
           {
             // Downgrading the quality slightly so we keep within Whisper's file size limitations
             WaveFormat waveFormat = new WaveFormat(sampleRate, bits: 16, channels: 1);
-            using (WaveFileWriter writer = new WaveFileWriter(outputPromptPath, waveFormat))
+            using (WaveFileWriter writer = new WaveFileWriter(inputPromptPath, waveFormat))
             {
               var elapsedTime = stopWatch.Elapsed.Seconds;
 
@@ -178,7 +176,7 @@ namespace OuterWildsCompanion
 
     private async void GetChatResponse()
     {
-      promptReader = File.OpenRead(outputPromptPath);
+      promptReader = File.OpenRead(inputPromptPath);
       var transcriptionOptions = new AudioTranscriptionOptions()
       {
         DeploymentName = "whisper-1",
@@ -198,13 +196,13 @@ namespace OuterWildsCompanion
       {
         RequestInterrupt();
         promptReader.Close();
-        File.Delete(outputPromptPath);
+        File.Delete(inputPromptPath);
         ModHelper.Console.WriteLine("Audio transcription failed! Please try again.", MessageType.Info);
         return;
       }
 
       promptReader.Close();
-      File.Delete(outputPromptPath);
+      File.Delete(inputPromptPath);
 
       if (!companionIsAvailable)
       {
@@ -213,7 +211,7 @@ namespace OuterWildsCompanion
       }
 
       string responseContent = string.Empty;
-      var chatCompletionsOptions = new ChatCompletionsOptions("gpt-4-vision-preview", messageList)
+      var chatCompletionsOptions = new ChatCompletionsOptions("gpt-4-1106-preview", messageList)
       {
         MaxTokens = 800,
         Temperature = 0.8f,
