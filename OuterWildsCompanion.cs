@@ -15,7 +15,6 @@ using Azure;
 using NAudio.Wave;
 using Azure.AI.OpenAI;
 using NAudio.Wave.SampleProviders;
-using UnityEngine.InputSystem.Controls;
 
 namespace OuterWildsCompanion
 {
