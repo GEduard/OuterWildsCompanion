@@ -26,8 +26,8 @@ namespace OuterWildsCompanion
       string textToSpeechEndpoint = "https://api.openai.com/v1/audio/speech";
       client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
       HttpResponseMessage result = await client.PostAsJsonAsync(textToSpeechEndpoint, textToSpeechRequest);
-      var resposneBytes = await result.Content.ReadAsByteArrayAsync();
-      return resposneBytes;
+      var responseBytes = await result.Content.ReadAsByteArrayAsync();
+      return responseBytes;
     }
   }
 }
